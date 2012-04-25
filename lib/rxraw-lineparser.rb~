@@ -23,7 +23,6 @@ module Enumerable
 end
 
 class RXRawLineParser
-
   
   def initialize(format_mask)
     @format_mask = format_mask

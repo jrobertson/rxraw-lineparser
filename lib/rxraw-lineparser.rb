@@ -23,6 +23,7 @@ module Enumerable
 end
 
 class RXRawLineParser
+
   
   def initialize(format_mask)
     @format_mask = format_mask
@@ -33,6 +34,8 @@ class RXRawLineParser
     field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
 
     patterns = possible_patterns(@format_mask)        
+    patterns.each{|x| puts x.inspect }
+    
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
     field_values = line.match(/#{pattern}/).captures      
 
@@ -66,18 +69,24 @@ class RXRawLineParser
       r2 = r
     end
     
+    #puts 'r2'
+    #r2.each{|x| puts x.inspect}
+                               
     rr = r2.map do |x|
       x.each_with_index.map do |item, i|
+
         d = a[i]
         case item
           when  1
             i > 0 ? d + qpattern : qpattern
           when 0
             s = "([^%s]+)" % d
-            i > 0 ? d + s : s
+            i > 0 ? a[i-1] + s : s
         end
       end
     end
+
+    rr.each{|x| puts x.inspect}
 
     count = 2**main_fields
     rr2 = rr.take(count+1).map {|x| x + [a[-1] + '(.*)']} 
@@ -99,17 +108,8 @@ class RXRawLineParser
   end
   
   def fmask_delimiters(f)
-    a = f.split(/(?=\[!\w+\])/)[0..-2].map do |x|
-
-      aa = x.split(/(?=[^\]]+$)/)
-
-      if aa.length == 2 and aa.first[/\[!\w+\]/] then
-        field, delimiter = *aa
-        delimiter ||= '$'
-        d = delimiter[0]
-        d
-      end
-    end
+    a = f.split(/(?=\[!\w+\])/)[0..-2].map {|x| x[/\](.*)/,1] }
   end
+
 
 end
