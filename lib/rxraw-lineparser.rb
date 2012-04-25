@@ -90,9 +90,13 @@ class RXRawLineParser
 
     count = 2**main_fields
     rr2 = rr.take(count+1).map {|x| x + [a[-1] + '(.*)']} 
-    wild_r = rr2.slice!(-1)
-
-    rrr = rr2 + rr[0..count-1] + [wild_r] + rr[count..-1]    
+    
+    if rr.length > 2 then
+      wild_r = rr2.slice!(-1)     
+      rrr = rr2 + rr[0..count-1] + [wild_r] + rr[count..-1]    
+    else
+      rrr = rr2 + rr[0..count-1] +  rr[count..-1]          
+    end
     
   end
 
