@@ -23,7 +23,6 @@ module Enumerable
 end
 
 class RXRawLineParser
-
   
   def initialize(format_mask)
     @format_mask = format_mask
@@ -34,7 +33,6 @@ class RXRawLineParser
     field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
 
     patterns = possible_patterns(@format_mask)        
-    patterns.each{|x| puts x.inspect }
     
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
     field_values = line.match(/#{pattern}/).captures      
@@ -60,6 +58,7 @@ class RXRawLineParser
     qpattern = %q{(["'][^"']+["'])}
     
     a = fmask_delimiters(format_mask)                                                       
+
     r = diminishing_permutation(main_fields)
 
     if r.length > 2 then
@@ -68,22 +67,26 @@ class RXRawLineParser
     else
       r2 = r
     end
-    
-    #puts 'r2'
-    #r2.each{|x| puts x.inspect}
-                               
+                                   
     rr = r2.map do |x|
-      x.each_with_index.map do |item, i|
+      x2 = x.each_with_index.map do |item, i|
 
         d = a[i]
         case item
           when  1
-            i > 0 ? d + qpattern : qpattern
+	    qpattern
           when 0
-            s = "([^%s]+)" % d
+            if d.length == 1 then
+              s = "([^%s]+)" % d
+            else
+              s = "(.*)(?=#{d})"
+            end
             i > 0 ? a[i-1] + s : s
         end
+        
       end
+      x2.unshift '^' + x2.shift
+      
     end
 
     rr.each{|x| puts x.inspect}
@@ -97,7 +100,7 @@ class RXRawLineParser
     else
       rrr = rr2 + rr[0..count-1] +  rr[count..-1]          
     end
-    
+    rrr  + [['(.*)']]
   end
 
   def diminishing_permutation(max_fields)
@@ -114,6 +117,5 @@ class RXRawLineParser
   def fmask_delimiters(f)
     a = f.split(/(?=\[!\w+\])/)[0..-2].map {|x| x[/\](.*)/,1] }
   end
-
 
 end
