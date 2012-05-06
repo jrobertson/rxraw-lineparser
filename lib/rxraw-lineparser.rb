@@ -23,6 +23,7 @@ module Enumerable
 end
 
 class RXRawLineParser
+
   
   def initialize(format_mask)
     @format_mask = format_mask
@@ -33,9 +34,10 @@ class RXRawLineParser
     field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
 
     patterns = possible_patterns(@format_mask)        
-    
+    #patterns.each{|x| puts x.inspect}
+
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
-    field_values = line.match(/#{pattern}/).captures      
+    field_values = line.match(/#{pattern}/).captures.map(&:strip)    
 
     found_quotes = find_qpattern(pattern)
 
@@ -51,9 +53,11 @@ class RXRawLineParser
   private 
   
   def possible_patterns(format_mask)
-    
+
+    part1 = format_mask[/^[^\[]+/].to_s
+
     tot_fields = format_mask.scan(/\[!\w+\]/).length
-    return [['(.*)']] if tot_fields <= 1
+    return [[part1 + '(.*)']] if tot_fields <= 1
     main_fields = tot_fields - 1
     qpattern = %q{(["'][^"']+["'])}
     
@@ -74,25 +78,31 @@ class RXRawLineParser
         d = a[i]
         case item
           when  1
-	    qpattern
+            qpattern
           when 0
             if d.length == 1 then
-              s = "([^%s]+)" % d
+              if i < x.length - 1 then
+                s = "([^%s]+)%s" % ([d]*2)
+              else
+                s = "([^%s]+)" % d  
+              end
             else
-              s = "(.*)(?=#{d})"
+              s = i < x.length - 1 ? "(.*)(?=#{d})#{d}" : "(.*)"
             end
-            i > 0 ? a[i-1] + s : s
+          s
         end
         
       end
-      x2.unshift '^' + x2.shift
+
+      r = x2.unshift '^' + part1 + x2.shift
       
     end
 
-    rr.each{|x| puts x.inspect}
+    #rr.each{|x| puts x.inspect}
 
     count = 2**main_fields
-    rr2 = rr.take(count+1).map {|x| x + [a[-1] + '(.*)']} 
+
+    rr2 = rr.take(count+1).map {|x| x + ['(.*)']} 
     
     if rr.length > 2 then
       wild_r = rr2.slice!(-1)     
@@ -100,7 +110,7 @@ class RXRawLineParser
     else
       rrr = rr2 + rr[0..count-1] +  rr[count..-1]          
     end
-    rrr  + [['(.*)']]
+    rrr  + [[part1 + '(.*)']]
   end
 
   def diminishing_permutation(max_fields)
@@ -110,12 +120,13 @@ class RXRawLineParser
   end
 
   def find_qpattern(s)
-    s.split(/(?=\([^\)]+\))/).map.with_index\
+    s.split(/(?=\(\?=)|(?=\(\[")/).map.with_index\
       .select{|x,i| x[/\["'\]\[\^"'\]\+\["'\]/] }.map(&:last)
   end
   
   def fmask_delimiters(f)
-    a = f.split(/(?=\[!\w+\])/)[0..-2].map {|x| x[/\](.*)/,1] }
+    a = f.split(/(?=\[!\w+\])/)[0..-2].map {|x| x[/\](.*)/,1] }.compact
   end
+
 
 end
