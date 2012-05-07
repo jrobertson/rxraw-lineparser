@@ -37,6 +37,9 @@ class RXRawLineParser
     #patterns.each{|x| puts x.inspect}
 
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
+    end_part = @format_mask[/[^\]]+$/].to_s
+    pattern += end_part
+    #puts 'pattern detected : ' + pattern.inspect
     field_values = line.match(/#{pattern}/).captures.map(&:strip)    
 
     found_quotes = find_qpattern(pattern)
@@ -82,9 +85,9 @@ class RXRawLineParser
           when 0
             if d.length == 1 then
               if i < x.length - 1 then
-                s = "([^%s]+)%s" % ([d]*2)
+                s = "([^%s]+)%s+" % ([d]*2)
               else
-                s = "([^%s]+)" % d  
+                s = "([^%s]+)" % d
               end
             else
               s = i < x.length - 1 ? "(.*)(?=#{d})#{d}" : "(.*)"
@@ -94,7 +97,7 @@ class RXRawLineParser
         
       end
 
-      r = x2.unshift '^' + part1 + x2.shift
+      r = x2.unshift '^' + part1 + x2.shift #+ end_part
       
     end
 
@@ -102,7 +105,7 @@ class RXRawLineParser
 
     count = 2**main_fields
 
-    rr2 = rr.take(count+1).map {|x| x + ['(.*)']} 
+    rr2 = rr.take(count+1).map {|x| x + [a[-1] +'(.*)']} 
     
     if rr.length > 2 then
       wild_r = rr2.slice!(-1)     
