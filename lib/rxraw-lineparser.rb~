@@ -85,7 +85,7 @@ class RXRawLineParser
           when 0
             if d.length == 1 then
               if i < x.length - 1 then
-                s = "([^%s]+)%s" % ([d]*2)
+                s = "([^%s]+)%s+" % ([d]*2)
               else
                 s = "([^%s]+)" % d
               end
