@@ -35,7 +35,13 @@ class RXRawLineParser
 
     patterns = possible_patterns(@format_mask)        
     #patterns.each{|x| puts x.inspect}
+    puts 'field_names.length : ' + field_names.length
+    if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
+        and field_names.length > 1 then
+      insert2space_patterns(field_names.length, patterns)
+    end
 
+    #patterns.each{|x| puts x.inspect}
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
     end_part = @format_mask[/[^\]]+$/].to_s
     pattern += end_part
@@ -54,6 +60,26 @@ class RXRawLineParser
   end
 
   private 
+  
+  def insert2space_patterns(field_count, patterns)
+    
+    a = (field_count-2).times.inject([2]) do |r,x|
+      v = 2 ** (x + 3)
+      diff = field_count - 2
+      r << (diff >= x+1 ? v-1 : v)
+    end
+
+    unit = ['([^\s]+)\s{2,}']
+    
+    space2_patterns = a.map.with_index do |x,i|
+      [x,(['^'] + Array.new(i+1,unit).concat(['(.*)'])).flatten]
+    end
+
+    space2_patterns.each_with_index do |x_line, i|
+      x, line = x_line
+      patterns = patterns.insert(patterns.length - x-i-2, line) 
+    end
+  end
   
   def possible_patterns(format_mask)
 
@@ -81,7 +107,7 @@ class RXRawLineParser
         d = a[i]
         case item
           when  1
-            qpattern
+            qpattern #+ d
           when 0
             if d.length == 1 then
               if i < x.length - 1 then

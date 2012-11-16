@@ -35,7 +35,9 @@ class RXRawLineParser
 
     patterns = possible_patterns(@format_mask)        
     #patterns.each{|x| puts x.inspect}
-    if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask then
+
+    if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
+        and field_names.length > 1 then
       insert2space_patterns(field_names.length, patterns)
     end
 
