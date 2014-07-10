@@ -40,7 +40,7 @@ class RXRawLineParser
         and field_names.length > 1 then
       insert2space_patterns(field_names.length, patterns)
     end
-
+    
     #patterns.each{|x| puts x.inspect}
     pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
     end_part = @format_mask[/[^\]]+$/].to_s
@@ -84,9 +84,11 @@ class RXRawLineParser
   def possible_patterns(format_mask)
 
     part1 = format_mask[/^[^\[]+/].to_s
-
+    pure_regex = format_mask.gsub(/\[!(\w+)\]/,'(?<\1>.*)')
     tot_fields = format_mask.scan(/\[!\w+\]/).length
-    return [[part1 + '(.*)']] if tot_fields <= 1
+
+    return [[pure_regex]] if tot_fields <= 1
+
     main_fields = tot_fields - 1
     qpattern = %q{(["'][^"']+["'])}
     
