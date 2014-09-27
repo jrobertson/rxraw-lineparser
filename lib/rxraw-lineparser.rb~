@@ -33,20 +33,29 @@ class RXRawLineParser
 
     field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
 
-    patterns = possible_patterns(@format_mask)        
-    #patterns.each{|x| puts x.inspect}
+    # only perform possible patterns to match when a custom
+    #                                                  format_mask is detected
+    pattern = if @format_mask[0] != '\\' then
 
-    if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
-        and field_names.length > 1 then
-      insert2space_patterns(field_names.length, patterns)
+      patterns = possible_patterns(@format_mask)        
+
+      if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
+          and field_names.length > 1 then
+        insert2space_patterns(field_names.length, patterns)
+      end
+      
+      pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
+
+      end_part = @format_mask[/[^\]]+$/].to_s
+      pattern += end_part      
+    else
+
+      @format_mask.gsub(/\[!\w+\]/,'(.*)')
     end
+
     
-    #patterns.each{|x| puts x.inspect}
-    pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
-    end_part = @format_mask[/[^\]]+$/].to_s
-    pattern += end_part
-    #puts 'pattern detected : ' + pattern.inspect
-    field_values = line.match(/#{pattern}/).captures.map(&:strip)    
+    field_values = line.match(/#{pattern}/).captures.map(&:strip)
+    #field_values = line.match(/#{@format_mask}/).captures.map(&:strip)        
 
     found_quotes = find_qpattern(pattern)
 
@@ -129,7 +138,6 @@ class RXRawLineParser
       
     end
 
-    #rr.each{|x| puts x.inspect}
 
     count = 2**main_fields
 

@@ -23,7 +23,6 @@ module Enumerable
 end
 
 class RXRawLineParser
-
   
   def initialize(format_mask)
     @format_mask = format_mask
@@ -43,17 +42,22 @@ class RXRawLineParser
           and field_names.length > 1 then
         insert2space_patterns(field_names.length, patterns)
       end
-      
-      pattern = patterns.detect {|x| line.match(/#{x.join}/)}.join
 
-      end_part = @format_mask[/[^\]]+$/].to_s
-      pattern += end_part      
+      pattern = patterns.detect do |x|
+        line.match(/#{x.join}/)
+      end.join
+
+      if patterns.length > 1 then
+        end_part = @format_mask[/[^\]]+$/].to_s
+        pattern += end_part      
+      else
+        pattern
+      end
     else
 
       @format_mask.gsub(/\[!\w+\]/,'(.*)')
     end
-
-    
+        
     field_values = line.match(/#{pattern}/).captures.map(&:strip)
     #field_values = line.match(/#{@format_mask}/).captures.map(&:strip)        
 
@@ -96,7 +100,7 @@ class RXRawLineParser
     pure_regex = format_mask.gsub(/\[!(\w+)\]/,'(?<\1>.*)')
     tot_fields = format_mask.scan(/\[!\w+\]/).length
 
-    return [[pure_regex]] if tot_fields <= 1
+    return [[pure_regex]] if tot_fields <= 1 or @format_mask[0] != '['
 
     main_fields = tot_fields - 1
     qpattern = %q{(["'][^"']+["'])}
