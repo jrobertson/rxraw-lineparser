@@ -29,44 +29,51 @@ class RXRawLineParser
   end
   
   def parse(line)
+    
+    if @format_mask.to_s.include? '(?<'  then      
 
-    field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
-
-    # only perform possible patterns to match when a custom
-    #                                                  format_mask is detected
-    pattern = if @format_mask[0] != '\\' then
-
-      patterns = possible_patterns(@format_mask)        
-
-      if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
-          and field_names.length > 1 then
-        insert2space_patterns(field_names.length, patterns)
-      end
-
-      pattern = patterns.detect do |x|
-        line.match(/#{x.join}/)
-      end.join
-
-      if patterns.length > 1 then
-        end_part = @format_mask[/[^\]]+$/].to_s
-        pattern += end_part      
-      else
-        pattern
-      end
+      r = line.match(/#{@format_mask}/)
+      field_names, field_values = r.names, r.captures
+      
     else
 
-      @format_mask.gsub(/\[!\w+\]/,'(.*)')
+      field_names = @format_mask.to_s.scan(/\[!(\w+)\]/).flatten.map(&:to_sym)        
+
+      # only perform possible patterns to match when a custom
+      #                                                  format_mask is detected
+      pattern = if @format_mask[0] != '\\' then
+
+        patterns = possible_patterns(@format_mask)        
+
+        if field_names.map{|x| "[!%s]" % x}.join(' ') == @format_mask \
+            and field_names.length > 1 then
+          insert2space_patterns(field_names.length, patterns)
+        end
+
+        pattern = patterns.detect do |x|
+          line.match(/#{x.join}/)
+        end.join
+
+        if patterns.length > 1 then
+          end_part = @format_mask[/[^\]]+$/].to_s
+          pattern += end_part      
+        else
+          pattern
+        end
+      else
+
+        @format_mask.gsub(/\[!\w+\]/,'(.*)')
+      end
+          
+      field_values = line.match(/#{pattern}/).captures.map(&:strip)
+
+      found_quotes = find_qpattern(pattern)
+
+      if found_quotes then
+        found_quotes.each {|i| field_values[i] = field_values[i][1..-2]}
+      end        
     end
-        
-    field_values = line.match(/#{pattern}/).captures.map(&:strip)
-    #field_values = line.match(/#{@format_mask}/).captures.map(&:strip)        
-
-    found_quotes = find_qpattern(pattern)
-
-    if found_quotes then
-      found_quotes.each {|i| field_values[i] = field_values[i][1..-2]}
-    end        
-
+    
     field_values += [''] * (field_names.length - field_values.length)
 
     [field_names, field_values]
